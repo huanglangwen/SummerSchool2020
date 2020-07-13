@@ -3,6 +3,8 @@
 #include <chrono>
 #include <cmath>
 #include <mutex>
+#include <iostream>
+#include <string>
 
 #ifndef NO_CUDA
 #include <cublas_v2.h>
@@ -90,13 +92,13 @@ T* malloc_pinned(size_t N, T value=T()) {
 // copy n*T from host to device
 template <typename T>
 void copy_to_device(T* from, T* to, size_t n) {
-    // TODO
+    cudaMemcpy(to, from, n*sizeof(T), cudaMemcpyHostToDevice);
 }
 
 // copy n*T from device to host
 template <typename T>
 void copy_to_host(T* from, T* to, size_t n) {
-    // TODO
+    cudaMemcpy(to, from, n*sizeof(T), cudaMemcpyDeviceToHost);
 }
 
 // copy n*T from host to device

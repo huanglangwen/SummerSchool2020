@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
 #include "util.hpp"
 
@@ -30,19 +31,22 @@ int main(int argc, char** argv) {
         cublasDaxpy(cublas_handle, n, &alpha, x, 1, y, 1);
     cublas_check_status(cublas_status);
 
+    cudaDeviceSynchronize();
     // stop the timer
     auto time_taken = get_time() - start;
 
     // validate the solution
     // this will copy the solution in y back to the host
     int errors = 0;
+    
+    
     #pragma omp parallel for reduction(+:errors)
     for(auto i=0; i<n; ++i) {
         if(std::fabs(6.-y[i])>1e-15) {
             errors++;
         }
     }
-
+    
     // stop the profiling session
     cudaProfilerStop();
 
