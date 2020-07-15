@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <cuda.h>
+#include "device_launch_parameters.h"
 
 #include "util.hpp"
 #include "cuda_stream.hpp"

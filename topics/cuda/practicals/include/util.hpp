@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <mutex>
+#include <string>
 
 #ifndef NO_CUDA
 #include <cublas_v2.h>
