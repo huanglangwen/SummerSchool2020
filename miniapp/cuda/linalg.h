@@ -54,7 +54,7 @@ namespace linalg
     // y, l and r are vectors of length N
     // alpha is a scalar
     void ss_scaled_diff(Field& y, const double alpha,
-            Field const& l, Field const& r);
+            Field& l, Field& r);
 
     // computes y := alpha*x
     // alpha is scalar
@@ -65,7 +65,7 @@ namespace linalg
     // alpha and beta are scalar
     // y, x and z are vectors on length n
     void ss_lcomb(Field& y, const double alpha, Field& x, const double beta,
-            Field const& z);
+            Field& z);
 
     // copy one vector into another y := x
     // x and y are vectors of length N

@@ -2,6 +2,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <iostream>
 
 #include "util.hpp"
 
@@ -20,8 +21,15 @@ class cuda_event {
         // of the event until it has been completed.
         auto status = cudaEventDestroy(event_);
         cuda_check_status(status);
+        std::cout << "Deconstructor called" << std::endl;
     }
-
+    /*
+    cuda_event(cuda_event&& e):
+        event_(e.event_) {
+        e.event_ = nullptr;
+        std::cout << "Move constructor called" << std::endl;
+    }
+    */
     // return the underlying event handle
     cudaEvent_t& event() {
         return event_;
@@ -31,6 +39,7 @@ class cuda_event {
     void wait() {
         auto status = cudaEventSynchronize(event_);
         cuda_check_status(status);
+        std::cout << "wait() called" << std::endl;
     }
 
     // returns time in seconds taken between this cuda event and another cuda event

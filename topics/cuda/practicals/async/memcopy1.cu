@@ -8,6 +8,7 @@
 #include "cuda_event.hpp"
 
 #define USE_PINNED
+#define DEBUG2
 
 // CUDA kernel implementing axpy:
 //      y += alpha*x
@@ -20,6 +21,40 @@ void axpy(int n, double alpha, const double *x, double* y) {
     }
 }
 
+#ifdef DEBUG1
+int main(int argc, char** argv) {
+    cuInit(0);
+    cudaStream_t s;
+    auto status = cudaStreamCreate(&s);
+    cuda_check_status(status);
+    cudaEvent_t event_;
+    status = cudaEventCreate(&event_);
+    cuda_check_status(status);
+    status = cudaEventRecord(event_, s);
+    cuda_check_status(status);
+    status = cudaEventSynchronize(event_);
+    cuda_check_status(status);
+    status = cudaEventDestroy(event_);
+    cuda_check_status(status);
+    status = cudaStreamDestroy(s);
+    cuda_check_status(status);
+    return 0;
+}
+#else 
+#ifdef DEBUG2
+int main(int argc, char** argv) {
+    cuInit(0);
+    cuda_stream stream;
+    auto event = stream.enqueue_event();
+    event.wait();
+    //cudaEvent_t event_;
+    //auto status = cudaEventCreate(&event_); cuda_check_status(status);
+    //status = cudaEventRecord(event_, stream.stream()); cuda_check_status(status);
+    //status = cudaEventSynchronize(event_); cuda_check_status(status);
+    //status = cudaEventDestroy(event_); cuda_check_status(status);
+    return 0;
+}
+#else
 int main(int argc, char** argv) {
     size_t pow = read_arg(argc, argv, 1, 20);
     size_t N = 1 << pow;
@@ -109,4 +144,5 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
+#endif
+#endif

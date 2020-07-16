@@ -38,6 +38,25 @@ void copy(double *y, const double* x, int n) {
         y[i] = x[i];
     }
 }
+
+__global__ 
+void ss_fill(double* x, const size_t n, const double value) {
+    auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) x[idx] = value;
+}
+
+__global__
+void ss_scale(double* y, const double alpha, double* x, const size_t n) {
+    auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) y[idx] = alpha * x[idx];
+}
+
+__global__
+void ss_lcomb(double* y, const double alpha, const double* x, const double beta, const double* z, const size_t n) {
+    auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) y[idx] = alpha * x[idx] + beta * z[idx];
+}
+
 } // namespace kernels
 
 bool cg_initialized = false;
@@ -90,7 +109,9 @@ double ss_dot(Field const& x, Field const& y)
 {
     double result = 0.;
     const int n = x.length();
-
+    auto handle = cublas_handle();
+    auto cu_status = cublasDdot(handle, n, x.device_data(), 1, y.device_data(), 1, &result);
+    cublas_check_status(cu_status);
     return result;
 }
 
@@ -103,7 +124,9 @@ double ss_norm2(Field const& x)
 {
     double result = 0;
     const int n = x.length();
-
+    auto handle = cublas_handle();
+    auto cu_status = cublasDnrm2(handle, n, x.device_data(), 1, &result);
+    cublas_check_status(cu_status);
     return result;
 }
 
@@ -147,6 +170,9 @@ void ss_copy(Field& y, Field const& x)
 // value is a scalar
 void ss_fill(Field& x, const double value)
 {
+    auto n = x.length();
+    auto grid_dim = calculate_grid_dim(block_dim, n);
+    kernels::ss_fill<<<grid_dim, block_dim >>>(x.device_data(), n, value);
 }
 
 // computes y := alpha*x + y
@@ -154,13 +180,10 @@ void ss_fill(Field& x, const double value)
 // alpha is a scalar
 void ss_axpy(Field& y, const double alpha, Field const& x)
 {
-}
-
-// computes y = alpha*(l-r)
-// y, l and r are vectors of length N
-// alpha is a scalar
-void ss_scaled_diff(Field& y, const double alpha, Field const& l, Field const& r)
-{
+    auto n = x.length();
+    auto handle = cublas_handle();
+    auto cu_status = cublasDaxpy(handle, n, &alpha, x.device_data(), 1, y.device_data(), 1);
+    cublas_check_status(cu_status);
 }
 
 // computes y := alpha*x
@@ -168,13 +191,27 @@ void ss_scaled_diff(Field& y, const double alpha, Field const& l, Field const& r
 // y and x are vectors
 void ss_scale(Field& y, const double alpha, Field& x)
 {
+    auto n = x.length();
+    auto grid_dim = calculate_grid_dim(block_dim, n);
+    kernels::ss_scale <<<grid_dim, block_dim >>> (y.device_data(), alpha, x.device_data(), n);
 }
 
 // computes linear combination of two vectors y := alpha*x + beta*z
 // alpha and beta are scalar
 // y, x and z are vectors
-void ss_lcomb(Field& y, const double alpha, Field& x, const double beta, Field const& z)
+void ss_lcomb(Field& y, const double alpha, Field& x, const double beta, Field& z)
 {
+    auto n = x.length();
+    auto grid_dim = calculate_grid_dim(block_dim, n);
+    kernels::ss_lcomb<<<grid_dim, block_dim >>> (y.device_data(), alpha, x.device_data(), beta, z.device_data(), n);
+}
+
+// computes y = alpha*(l-r)
+// y, l and r are vectors of length N
+// alpha is a scalar
+void ss_scaled_diff(Field& y, const double alpha, Field& l, Field& r)
+{
+    ss_lcomb(y, alpha, l, -alpha, r);
 }
 
 // conjugate gradient solver

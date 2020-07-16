@@ -6,6 +6,7 @@
 
 #include "util.hpp"
 #include "cuda_stream.hpp"
+#include "device_launch_parameters.h"
 
 // 2D diffusion example
 // the grid has a fixed width of nx=128
@@ -20,6 +21,13 @@ void write_to_file(int nx, int ny, double* data);
 __global__
 void diffusion(double *x0, double *x1, int nx, int ny, double dt) {
 // TODO : implement stencil using 2d launch configuration
+    auto i = threadIdx.x + blockDim.x * blockIdx.x + 1;
+    auto j = threadIdx.y + blockDim.y * blockIdx.y + 1;
+
+    if (i < (nx - 1) && j < (ny - 1)) {
+        auto pos = i + j * nx;
+        x1[pos] = x0[pos] + dt * (-4. * x0[pos] + x0[pos - nx] + x0[pos + nx] + x0[pos - 1] + x0[pos + 1]);
+    }
 // NOTE : i-major ordering, i.e. x[i,j] is indexed at location [i+j*nx]
 //  for(i=1; i<nx-1; ++i) {
 //    for(j=1; j<ny-1; ++j) {
@@ -71,7 +79,11 @@ int main(int argc, char** argv) {
     // time stepping loop
     for(auto step=0; step<nsteps; ++step) {
         // TODO: launch the diffusion kernel in 2D
-
+        int bx = 8;
+        int by = 8;
+        dim3 block_dim(bx, by);
+        dim3 grid_dim((nx - 2 - 1) / bx + 1, (ny - 2 - 1) / by + 1);
+        diffusion<<<grid_dim, block_dim >>>(x0, x1, nx, ny, dt);
         std::swap(x0, x1);
     }
     auto stop_event = stream.enqueue_event();

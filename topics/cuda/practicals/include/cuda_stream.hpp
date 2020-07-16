@@ -23,12 +23,12 @@ class cuda_stream {
     // insert event into stream
     // returns immediately
     cuda_event enqueue_event() {
-        cuda_event e;
+        cuda_event e{};
 
         auto status = cudaEventRecord(e.event(), stream_);
         cuda_check_status(status);
 
-        return e;
+        return e;//std::move(e);
     }
 
     // make all future work on stream wait until event has completed.

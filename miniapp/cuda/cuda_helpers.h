@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <cublas_v2.h>
+#include <cuda_runtime.h>
 
 static inline void cuda_check_last_kernel(std::string const& errstr) {
     auto status = cudaGetLastError();
@@ -19,6 +20,13 @@ static inline void cuda_check_status(cudaError_t error_code) {
         std::cerr << "error: CUDA API call : "
                   << cudaGetErrorString(error_code) << std::endl;
         exit(-1);
+    }
+}
+
+static void cublas_check_status(cublasStatus_t status) {
+    if (status != CUBLAS_STATUS_SUCCESS) {
+        std::cerr << "error: CUDABLAS API call\n";
+        exit(1);
     }
 }
 
