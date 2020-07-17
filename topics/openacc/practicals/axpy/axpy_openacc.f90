@@ -22,10 +22,11 @@ subroutine axpy_gpu(n, alpha, x, y)
   integer i
 
   ! TODO: Offload this loop to the GPU
+  !$acc kernels
   do i = 1,n
      y(i) = y(i) + alpha*x(i)
   enddo
-
+  !$acc end kernels
 end subroutine axpy_gpu
 
 program main

@@ -1,38 +1,17 @@
 .PHONY: all clean
 
-CRAY ?= 1
-PGI  ?= 0
-GCC  ?= 0
+#CRAY ?= 0
+#PGI  ?= 1
+#GCC  ?= 0
 VERBOSE ?= 0
 override CPPFLAGS += -I../common
 
-ifeq ($(PE_ENV), CRAY)
-	CXX = CC
-	FC = ftn
-	CXXFLAGS = -hstd=c++11 -O3 -homp -hacc -dynamic
-	FCFLAGS  = -O3 -homp -hacc -dynamic
-	ifeq ($(VERBOSE), 1)
-		CXXFLAGS += -hmsgs
-		FCFLAGS  += -hmsgs
-	endif
-endif
-
-ifeq ($(PE_ENV), PGI)
-	CXX = pgc++
-	FC  = pgf90
-	CXXFLAGS = -DPGI -std=c++11 -O3 -acc -Minfo=accel -ta=tesla:cuda10.1,pinned
-	FCFLAGS  = -O3 -acc -Minfo=accel -ta=tesla:cuda10.1,pinned
-	LDFLAGS += -L$(CRAY_CUDATOOLKIT_DIR)/lib64 -lcudart
-endif
-
-ifeq ($(PE_ENV), GNU)
-	# not tested
-	CXX = g++
-	FC  = gfortran
-	CXXFLAGS = -std=c++11 -O3 -fopenmp -fopenacc -I$(CRAY_CUDATOOLKIT_DIR)/include
-	FCFLAGS  = -O3 -fopenacc -fopenmp
-	LDFLAGS += -L$(CRAY_CUDATOOLKIT_DIR)/lib64 -lcudart
-endif
+CXX = pgcc
+FC  = pgf90
+override CUDA_PATH = C:\\Program\ Files\\NVIDIA\ GPU\ Computing\ Toolkit\\CUDA\\v11.0
+CXXFLAGS = -DPGI -O3 -acc -Minfo=accel
+FCFLAGS  = -O3 -acc -Minfo=accel
+LDFLAGS += -L"$(CUDA_PATH)/lib/x64" -L:cudart.lib
 
 OPENACC_BENCHMARKS= axpy.openacc axpy.openacc.fort
 
@@ -40,14 +19,14 @@ BENCHMARKS=$(OPENACC_BENCHMARKS)
 
 all: $(BENCHMARKS)
 
-util.o: ../common/util.f03
+util.obj: ../common/util.f03
 	$(FC) $(CPPFLAGS) -c $(FCFLAGS) $<
 
 axpy.openacc: axpy_openacc.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@ $(LDFLAGS)
 
-axpy.openacc.fort: axpy_openacc.f90 util.o
-	$(FC) $(CPPFLAGS) $(FCFLAGS) $< util.o -o $@ $(LDFLAGS)
+axpy.openacc.fort: axpy_openacc.f90 util.obj
+	$(FC) $(CPPFLAGS) $(FCFLAGS) $< util.obj -o $@ $(LDFLAGS)
 
 clean:
-	rm -f $(BENCHMARKS) *.cub *.ptx *.o *.mod
+	rm -f $(BENCHMARKS) *.cub *.ptx *.obj *.mod
